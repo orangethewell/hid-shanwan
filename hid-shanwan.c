@@ -132,42 +132,42 @@ static int shanwan_play(struct input_dev *dev, void *data, struct ff_effect *eff
 }
 
 
-static int shanwan_init(struct hid_device *hid)
+static int shanwan_input_configured(struct hid_device *hid,
+                                    struct hid_input *hidinput)
 {
-	struct shanwan_device *shanwan;
-	struct hid_report *report;
-	struct hid_input *hidinput;
-	struct list_head *report_list =&hid->report_enum[HID_OUTPUT_REPORT].report_list;
-	struct input_dev *dev;
+    struct shanwan_device *shanwan;
+    struct hid_report *report;
+    struct list_head *report_list =
+        &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+    struct input_dev *dev = hidinput->input;
 
-	if (list_empty(&hid->inputs)) {
-		hid_err(hid, "no inputs found\n");
-		return -ENODEV;
-	}
-	hidinput = list_first_entry(&hid->inputs, struct hid_input, list);
-	dev = hidinput->input;
+    /*
+     * Só instala force feedback no primeiro input device.
+     */
+    if (!list_is_first(&hidinput->list, &hid->inputs))
+        return 0;
 
-	if (list_empty(report_list)) {
-		hid_err(hid, "no output reports found\n");
-		return -ENODEV;
-	}
+    if (list_empty(report_list)) {
+        hid_err(hid, "no output reports found\n");
+        return -ENODEV;
+    }
 
-	report = list_first_entry(report_list, struct hid_report, list);
+    report = list_first_entry(report_list, struct hid_report, list);
 
-	shanwan = kzalloc(sizeof(struct shanwan_device), GFP_KERNEL);
-	if (!shanwan)
-		return -ENOMEM;
+    shanwan = kzalloc(sizeof(struct shanwan_device), GFP_KERNEL);
+    if (!shanwan)
+        return -ENOMEM;
 
-	set_bit(FF_RUMBLE, dev->ffbit);
+    set_bit(FF_RUMBLE, dev->ffbit);
 
-	if (input_ff_create_memless(dev, shanwan, shanwan_play)){
-		kfree(shanwan);
-		return -ENODEV;
-	}
+    if (input_ff_create_memless(dev, shanwan, shanwan_play)) {
+        kfree(shanwan);
+        return -ENODEV;
+    }
 
-	shanwan->report = report;
+    shanwan->report = report;
 
-	return 0;
+    return 0;
 }
 
 
@@ -185,13 +185,6 @@ static int shanwan_probe(struct hid_device *hdev, const struct hid_device_id *id
 	if (error) {
 		hid_err(hdev, "hw start failed\n");
 		return error;
-	}
-
-	error = shanwan_init(hdev);
-	if (error) {
-		hid_warn(hdev,
-			 "Failed to enable force feedback support, error: %d\n",
-			 error);
 	}
 
 	error = hid_hw_open(hdev);
@@ -231,11 +224,12 @@ static const __u8 *shanwan_report_fixup(struct hid_device *hid, __u8 *rdesc,
 
 
 static struct hid_driver shanwan_driver = {
-	.name			= "shanwan",
-	.id_table		= shanwan_devices,
-	.probe			= shanwan_probe,
-	.report_fixup 	= shanwan_report_fixup,
-	.remove			= shanwan_remove,
+	.name			  = "shanwan",
+	.id_table		  = shanwan_devices,
+	.probe			  = shanwan_probe,
+	.report_fixup 	  = shanwan_report_fixup,
+	.input_configured = shanwan_input_configured,
+	.remove			  = shanwan_remove,
 };
 
 
