@@ -3,7 +3,8 @@ PWD	:= $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 TOOLCHAIN := 
 ARCH := x86
-KDIR := /lib/modules/$(shell uname -r)/build
+KERNELRELEASE ?= $(shell uname -r)
+KDIR := /lib/modules/$(KERNELRELEASE)/build
 TCPATH :=
 
 PATH := $(TCPATH):$(PATH)
