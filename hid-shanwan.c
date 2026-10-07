@@ -218,7 +218,7 @@ static const struct hid_device_id shanwan_devices[] = {
 };
 
 
-static __u8 *shanwan_report_fixup(struct hid_device *hid, __u8 *rdesc,
+static const __u8 *shanwan_report_fixup(struct hid_device *hid, __u8 *rdesc,
 	unsigned int *rsize)
 {
 	if (*rsize == PID0575_RDESC_ORIG_SIZE) {
